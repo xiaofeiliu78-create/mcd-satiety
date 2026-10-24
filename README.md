@@ -262,11 +262,13 @@ web/index.html         手机版网页（单文件，纯前端，同一套算法
 | 名称对齐方案、bug 修复、代码实现 | WorkBuddy 编写，作者验收 |
 | 文档撰写 | WorkBuddy 起草，作者审阅 |
 
-全程开发记录见 [`workbuddy.md`](workbuddy.md)，包含被排除的方案和踩过的坑，未作美化。完整声明见 [`CONTEST_DECLARATION.md`](CONTEST_DECLARATION.md)。
+全程开发记录见 [`workbuddy.md`](workbuddy.md)，包含被排除的方案和踩过的坑，未作美化。完整的原创说明与数据来源见 [`docs/作者与分工.md`](docs/作者与分工.md)；[`CONTEST_DECLARATION.md`](CONTEST_DECLARATION.md) 按大赛要求使用官方原文。
 
 ## 相关文档
 
 - [MCP 集成说明](MCP_INTEGRATION.md) — 4 个工具的真实调用、两套数据如何缝起来、35 个接口的可用性实测表
-- [参赛声明](CONTEST_DECLARATION.md)
+- [参赛声明](CONTEST_DECLARATION.md)（大赛指定原文）
+- [作者与分工](docs/作者与分工.md) — 人机分工、原创说明、数据来源
 - [开发过程记录](workbuddy.md) — 含 17 条踩坑清单
 - [真实运行样本](docs/sample-output.md)
+- [怎么提交](docs/怎么提交.md) — 两个赛道的提交入口与报名 Issue 原文
