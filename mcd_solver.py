@@ -10,6 +10,8 @@ mcd_solver.py — 「麦门顶饿算账」核心引擎
 
 用法：
   python mcd_solver.py --city 周口市 --keyword 万达广场 --budget 35 --kcal 800
+  python mcd_solver.py --city 周口市 --budget 35          # 不给门店名，自动列出该城市门店让人选
+  python mcd_solver.py --city 周口市 --budget 35 --oneline # 只输出一句话，方便发微信
   python mcd_solver.py --store 3560111 --budget 30 --kcal 600 --json
 """
 import argparse
@@ -28,6 +30,33 @@ JOG_KCAL_PER_MIN = 10.0   # 60kg 慢跑约 10 kcal/分钟
 MIN_CAL_PROTEIN = 15.0    # 解馋档的蛋白下限，防止选出纯糖油
 MIN_ECON_PROTEIN = 10.0   # 省钱档的蛋白下限，防止把薯饼当蛋白来源
 
+TOKEN_HELP = """
+没有找到麦当劳 MCP Token。先花一分钟领一个，然后任选一种方式配置。
+
+一、去哪儿拿
+    手机或电脑打开  https://open.mcd.cn/mcp
+    点右上角「登录」，用手机号加验证码登录
+    登录后点右上角「控制台」，点「激活」，同意协议
+    Token 立刻生成，复制那串字符
+
+二、怎么设置（三选一，任选一种）
+    Windows 临时生效，只对当前窗口有效：
+        set MCD_MCP_TOKEN=你的Token
+
+    Windows 永久生效，设置完要关掉命令行窗口重新打开：
+        setx MCD_MCP_TOKEN 你的Token
+
+    macOS 或 Linux：
+        export MCD_MCP_TOKEN=你的Token
+
+三、或者改用配置文件
+    在用户目录下的 .workbuddy/mcp.json 里加一个 mcd-mcp 连接器，
+    Authorization 填  Bearer 你的Token
+    仓库里的 mcp-config.example.json 就是现成模板，可以照着改
+
+配置完再运行一次就行。Token 只能自己留着，不要写进仓库，也不要发给别人。
+"""
+
 
 def choose_store(stores, keyword):
     """
@@ -42,6 +71,88 @@ def choose_store(stores, keyword):
         return sum(1 for t in tokens if t in hay)
 
     return max(cands, key=score) if tokens else cands[0]
+
+
+def sort_by_distance(stores):
+    """按接口返回的 distance 升序。distance 单位是米。"""
+    def d(s):
+        try:
+            return float(s.get("distance") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    return sorted(stores, key=d)
+
+
+def fmt_distance(meters):
+    try:
+        m = float(meters)
+    except (TypeError, ValueError):
+        return "距离未知"
+    if m <= 0:
+        return "距离未知"
+    if m < 1000:
+        return f"{m:.0f} 米"
+    return f"{m / 1000:.1f} 公里"
+
+
+def render_store_list(stores):
+    """把候选门店排成给人看的列表。"""
+    L = [f"按城市搜到 {len(stores)} 家门店（距离按城市中心估算，仅供排序参考）："]
+    for i, s in enumerate(stores, 1):
+        status = "营业中" if s.get("businessStatus") else "休息中"
+        addr = (s.get("address") or "").strip()
+        L.append(f"  {i}. {s.get('storeName', '')}　{fmt_distance(s.get('distance'))}　{status}"
+                 + (f"　{addr}" if addr else ""))
+    return "\n".join(L)
+
+
+def prompt_pick_store(stores):
+    """
+    让人选一家。有交互终端就问，没有就直接取最近的一家。
+    返回 (store, 是否自动选择)。
+    """
+    if len(stores) == 1:
+        return stores[0], True
+    interactive = False
+    try:
+        interactive = sys.stdin is not None and sys.stdin.isatty()
+    except (AttributeError, ValueError):
+        interactive = False
+    if not interactive:
+        return stores[0], True
+    print(f"选择第几家（直接回车 = 1，最近的一家）：", end="", file=sys.stderr, flush=True)
+    try:
+        raw = input().strip()
+    except (EOFError, KeyboardInterrupt):
+        print("", file=sys.stderr)
+        return stores[0], True
+    if not raw:
+        return stores[0], False
+    try:
+        idx = int(raw)
+        if 1 <= idx <= len(stores):
+            return stores[idx - 1], False
+    except ValueError:
+        pass
+    print("输入的不是有效序号，默认用最近的一家。", file=sys.stderr)
+    return stores[0], True
+
+
+def cn_money(x):
+    """把 3.5 说成「3 块 5」，把 3.0 说成「3 块」。"""
+    x = round(float(x), 2)
+    if x <= 0:
+        return "0 块"
+    yuan = int(x)
+    jiao = int(round((x - yuan) * 10))
+    if jiao >= 10:
+        yuan += 1
+        jiao = 0
+    if jiao == 0:
+        return f"{yuan} 块"
+    if yuan == 0:
+        return f"{jiao} 毛"
+    return f"{yuan} 块 {jiao}"
 
 
 def build_pool(meals, nutrition):
@@ -89,6 +200,10 @@ def enumerate_combos(pool, budget, kcal_cap, max_items=3, max_qty=2):
                     "fat": round(sum(pool[i]["fat"] * q for i, q in zip(idxs, qtys)), 1),
                     "carb": round(sum(pool[i]["carb"] * q for i, q in zip(idxs, qtys)), 1),
                     "sodium": round(sum(pool[i]["sodium"] * q for i, q in zip(idxs, qtys))),
+                    # 组合里最"脏"那一件的密度，用来挡住拿冰淇淋/薯条凑蛋白的组合
+                    "min_item_density": round(min(
+                        (pool[i]["protein"] / (pool[i]["kcal"] / 100.0)) if pool[i]["kcal"] > 0 else 0.0
+                        for i in idxs), 2),
                 })
     for c in combos:
         c.update(metrics(c))
@@ -114,7 +229,9 @@ def pick_tiers(combos):
     tiers, used = {}, set()
 
     # ① 吃最饱不胖：热量受限下蛋白最多（同蛋白取热量更低者）
-    cand = [c for c in combos if c["protein_density"] >= 3.0]
+    #    组合里每一件都得够干净（密度 ≥ 3），否则会推荐「鳕鱼堡 + 冰淇淋」这种为 2 克蛋白塞甜品的结果
+    cand = [c for c in combos
+            if c["protein_density"] >= 3.0 and c.get("min_item_density", 0) >= 3.0]
     if cand:
         c = _pick(cand, lambda c: (c["protein"], -c["kcal"]), used)
         if c:
@@ -189,7 +306,41 @@ def budget_hint(pool, budget):
 
 
 def fmt_items(combo):
-    return " + ".join(f"{it['name']}×{it['qty']}" for it in combo["items"])
+    """数量是 1 就不显示 ×1，读起来干净。"""
+    parts = []
+    for it in combo["items"]:
+        parts.append(it["name"] + (f"×{it['qty']}" if it["qty"] > 1 else ""))
+    return " + ".join(parts)
+
+
+def render_oneline(store, budget, kcal_cap, tiers, insight):
+    """
+    只输出一句话，方便直接发微信。
+    形如：35 块 800 大卡，点薄皮焦香V翅×2，384 大卡 34 克蛋白，比培根安格斯厚牛堡省 3 块 5、少 323 大卡。
+    """
+    best = tiers.get("吃最饱不胖")
+    if not best:
+        return f"{budget:g} 块 {kcal_cap:.0f} 大卡，这家门店凑不出像样的一餐，把预算或热量放宽一点。"
+
+    head = f"{budget:g} 块"
+    if kcal_cap:
+        head += f" {kcal_cap:.0f} 大卡"
+    line = (f"{head}，点{fmt_items(best)}，"
+            f"{best['kcal']:.0f} 大卡 {best['protein']:g} 克蛋白")
+
+    gap = (insight or {}).get("gap")
+    if gap:
+        other = gap["worst"]
+        diff_money = best["price"] - other["price"]
+        seg = []
+        if abs(diff_money) >= 0.05:
+            seg.append(f"{'省' if diff_money < 0 else '多花'} {cn_money(abs(diff_money))}")
+        if gap["delta_kcal"] > 0:
+            seg.append(f"少 {gap['delta_kcal']:.0f} 大卡")
+        if seg:
+            line += f"，比{fmt_items(other)}{'、'.join(seg)}"
+
+    return line + "。"
 
 
 def render(store, budget, kcal_cap, pool, tiers, top_items, verified, insight, hint=None):
@@ -261,39 +412,82 @@ def render(store, budget, kcal_cap, pool, tiers, top_items, verified, insight, h
 def main():
     ap = argparse.ArgumentParser(description="麦门顶饿算账")
     ap.add_argument("--city", default="周口市")
-    ap.add_argument("--keyword", default="万达广场")
-    ap.add_argument("--store", default="")
+    ap.add_argument("--keyword", default="", help="门店关键词。不给的话，就列出这座城市的门店让人选")
+    ap.add_argument("--store", default="", help="直接指定 storeCode，跳过门店搜索")
+    ap.add_argument("--pick", type=int, default=0, help="配合 --city 用，直接选第几家（从 1 开始）")
     ap.add_argument("--budget", type=float, default=35.0)
     ap.add_argument("--kcal", type=float, default=800.0, help="0 表示不限")
     ap.add_argument("--max-items", type=int, default=3)
+    ap.add_argument("--oneline", action="store_true", help="只输出一句话，方便发微信")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    client = mc.McdMcp()
+    try:
+        client = mc.McdMcp()
+    except mc.TokenMissing:
+        print(TOKEN_HELP, file=sys.stderr)
+        return 2
+    except RuntimeError as e:
+        print(f"连接麦当劳接口失败：{e}", file=sys.stderr)
+        return 2
 
+    # ---------------- 定门店 ----------------
     if args.store:
-        store = {"storeCode": args.store, "storeName": f"门店 {args.store}"}
+        store = {"storeCode": args.store, "storeName": f"门店 {args.store}", "distance": 0}
     else:
-        stores = mc.get_stores(client, args.city, args.keyword)
+        keyword = (args.keyword or "").strip()
+        if keyword:
+            stores = mc.get_stores(client, args.city, keyword)
+            if not stores:
+                print(f"「{keyword}」附近没搜到门店，改用整座城市再搜一次。", file=sys.stderr)
+                stores = mc.get_stores(client, args.city, args.city)
+                keyword = ""
+        else:
+            stores = mc.get_stores(client, args.city, args.city)
+
         if not stores:
-            print(f"没在「{args.city} {args.keyword}」附近找到门店。", file=sys.stderr)
-            return 2
-        store = choose_store(stores, args.keyword)
+            print(f"在「{args.city}」没搜到门店。换个城市名试试，比如 郑州市。", file=sys.stderr)
+            return 3
+
+        stores = sort_by_distance(stores)
+
+        if keyword:
+            store = choose_store(stores, keyword)
+        elif args.pick:
+            if not 1 <= args.pick <= len(stores):
+                print(f"--pick {args.pick} 超出范围，这座城市一共 {len(stores)} 家门店。", file=sys.stderr)
+                return 3
+            store = stores[args.pick - 1]
+        else:
+            if not args.oneline:
+                print(render_store_list(stores), file=sys.stderr)
+                print("", file=sys.stderr)
+            store, auto = prompt_pick_store(stores)
+            if auto and not args.oneline:
+                print(f"已自动选择最近的一家：{store.get('storeName', '')}", file=sys.stderr)
+
     sc = store["storeCode"]
 
     meals, _ = mc.get_meals(client, sc)
     nutrition = mc.get_nutrition(client)
     pool = build_pool(meals, nutrition)
     if not pool:
-        print("这家门店没有单品能对上营养库。", file=sys.stderr)
-        return 3
+        print("这家门店没有单品能对上营养库，换一家门店试试。", file=sys.stderr)
+        return 4
 
     combos = enumerate_combos(pool, args.budget, args.kcal or None, args.max_items)
     if not combos:
-        print(f"预算 ¥{args.budget:g} / 热量 {args.kcal:g} 内凑不出有蛋白的组合。", file=sys.stderr)
-        return 4
+        print(f"预算 {args.budget:g} 块、热量 {args.kcal:g} 大卡之内，凑不出含蛋白的组合，放宽一点再试。",
+              file=sys.stderr)
+        return 5
     tiers = pick_tiers(combos)
     insight = build_insight(combos, tiers.get("吃最饱不胖"), pool)
+
+    # ---------------- 一句话模式 ----------------
+    if args.oneline:
+        print(render_oneline(store, args.budget, args.kcal, tiers, insight))
+        return 0
+
     hint = budget_hint(pool, args.budget)
 
     verified = None

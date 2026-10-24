@@ -20,6 +20,10 @@ ENDPOINT = "https://mcp.mcd.cn"
 PROTOCOL = "2025-06-18"
 
 
+class TokenMissing(RuntimeError):
+    """没找到 Token。由调用方负责打印「怎么拿、怎么设」的引导，不在这里甩异常堆栈。"""
+
+
 # ---------------------------------------------------------------- token / rpc
 def load_token():
     tok = os.environ.get("MCD_MCP_TOKEN", "").strip()
@@ -27,15 +31,15 @@ def load_token():
         return tok
     cfg = os.path.join(os.path.expanduser("~"), ".workbuddy", "mcp.json")
     if not os.path.exists(cfg):
-        raise RuntimeError(
-            "没找到 MCP Token。请设置环境变量 MCD_MCP_TOKEN，"
-            "或在 WorkBuddy 连接器里配好 mcd-mcp。"
-        )
-    data = json.load(open(cfg, encoding="utf-8"))
+        raise TokenMissing()
+    try:
+        data = json.load(open(cfg, encoding="utf-8"))
+    except (OSError, ValueError):
+        raise TokenMissing()
     server = (data.get("mcpServers") or {}).get("mcd-mcp") or {}
     auth = ((server.get("headers") or {}).get("Authorization") or "").strip()
     if not auth:
-        raise RuntimeError("mcp.json 里没有 mcd-mcp 的 Authorization 头。")
+        raise TokenMissing()
     return auth.replace("Bearer", "").strip()
 
 
