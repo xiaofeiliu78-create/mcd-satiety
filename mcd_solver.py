@@ -23,6 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mcd_client as mc
+import catalog as ct
 
 INDULGE_KEYS = ("堡", "翅", "鸡块", "鸡排", "鸡腿", "派", "冰淇淋", "麦旋风", "新地")
 SODIUM_DAILY = 2000.0     # 中国居民每日钠建议上限 mg
@@ -169,9 +170,16 @@ def build_pool(meals, nutrition):
 
 
 def metrics(x):
+    """展示用四舍五入，排序用原始值。
+
+    踩过的坑：1.1739 和 1.1667 都四舍五入成 1.17，排序时被当成并列，
+    结果按下一个键（蛋白数）选错了答案。所以排序一律用 *_raw。
+    """
     price, kcal, protein = x["price"], x["kcal"], x["protein"]
     return {
+        "g_per_yuan_raw": (protein / price) if price > 0 else 0.0,
         "g_per_yuan": round(protein / price, 2) if price > 0 else 0.0,
+        "protein_density_raw": (protein / (kcal / 100.0)) if kcal > 0 else 0.0,
         "protein_density": round(protein / (kcal / 100.0), 1) if kcal > 0 else 0.0,
     }
 
@@ -179,9 +187,11 @@ def metrics(x):
 def enumerate_combos(pool, budget, kcal_cap, max_items=3, max_qty=2):
     combos = []
     n = len(pool)
+    # 套餐最多点 1 份：一个人点两份「三件套」等于两杯可乐两份薯条，现实里不会这么点
+    qty_cap = [1 if pool[i].get("kind") == "套餐" else max_qty for i in range(n)]
     for k in range(1, max_items + 1):
         for idxs in itertools.combinations(range(n), k):
-            for qtys in itertools.product(range(1, max_qty + 1), repeat=k):
+            for qtys in itertools.product(*[range(1, qty_cap[i] + 1) for i in idxs]):
                 price = sum(pool[i]["price"] * q for i, q in zip(idxs, qtys))
                 if price > budget + 1e-9:
                     continue
@@ -193,6 +203,7 @@ def enumerate_combos(pool, budget, kcal_cap, max_items=3, max_qty=2):
                     continue
                 combos.append({
                     "items": [{"code": pool[i]["code"], "name": pool[i]["name"],
+                               "kind": pool[i].get("kind", "单品"),
                                "price": pool[i]["price"], "qty": q} for i, q in zip(idxs, qtys)],
                     "price": round(price, 1),
                     "kcal": round(kcal),
@@ -231,7 +242,7 @@ def pick_tiers(combos):
     # ① 吃最饱不胖：热量受限下蛋白最多（同蛋白取热量更低者）
     #    组合里每一件都得够干净（密度 ≥ 3），否则会推荐「鳕鱼堡 + 冰淇淋」这种为 2 克蛋白塞甜品的结果
     cand = [c for c in combos
-            if c["protein_density"] >= 3.0 and c.get("min_item_density", 0) >= 3.0]
+            if c["protein_density_raw"] >= 3.0 and c.get("min_item_density", 0) >= 3.0]
     if cand:
         c = _pick(cand, lambda c: (c["protein"], -c["kcal"]), used)
         if c:
@@ -240,13 +251,15 @@ def pick_tiers(combos):
     # ② 每块钱蛋白最多：不看热量只看钱，但设蛋白下限，别把薯饼当蛋白来源
     cand2 = [c for c in combos if c["protein"] >= MIN_ECON_PROTEIN]
     if cand2:
-        c = _pick(cand2, lambda c: (c["g_per_yuan"], c["protein"], -c["price"]), used)
+        c = _pick(cand2, lambda c: (c["g_per_yuan_raw"], c["protein"], -c["price"]), used)
         if c:
             tiers["每块钱蛋白最多"] = c
 
-    # ③ 过嘴瘾还不亏：必须含炸物/汉堡，且蛋白不低于下限
+    # ③ 过嘴瘾还不亏：只选「一样」最能解馋的东西，不拼凑
+    #    之前允许组合，会推出「套餐 + 苹果片」这种为了凑热量硬加一个配菜的答案，很怪
     cand3 = [c for c in combos
-             if c["protein"] >= MIN_CAL_PROTEIN
+             if len(c["items"]) == 1
+             and c["protein"] >= MIN_CAL_PROTEIN
              and any(any(k in it["name"] for k in INDULGE_KEYS) for it in c["items"])]
     if cand3:
         c = _pick(cand3, lambda c: (c["kcal"], c["protein"]), used)
@@ -305,11 +318,12 @@ def budget_hint(pool, budget):
             f"（{cheapest['protein']:.0f} g 蛋白 / {cheapest['kcal']:.0f} kcal）。")
 
 
-def fmt_items(combo):
-    """数量是 1 就不显示 ×1，读起来干净。"""
+def fmt_items(combo, mark=True):
+    """数量是 1 就不显示 ×1，读起来干净。mark=False 用于发微信的句子，不带标记。"""
     parts = []
     for it in combo["items"]:
-        parts.append(it["name"] + (f"×{it['qty']}" if it["qty"] > 1 else ""))
+        tag = "［套餐］" if (mark and it.get("kind") == "套餐") else ""
+        parts.append(tag + it["name"] + (f"×{it['qty']}" if it["qty"] > 1 else ""))
     return " + ".join(parts)
 
 
@@ -325,7 +339,7 @@ def render_oneline(store, budget, kcal_cap, tiers, insight):
     head = f"{budget:g} 块"
     if kcal_cap:
         head += f" {kcal_cap:.0f} 大卡"
-    line = (f"{head}，点{fmt_items(best)}，"
+    line = (f"{head}，点{fmt_items(best, mark=False)}，"
             f"{best['kcal']:.0f} 大卡 {best['protein']:g} 克蛋白")
 
     gap = (insight or {}).get("gap")
@@ -338,7 +352,7 @@ def render_oneline(store, budget, kcal_cap, tiers, insight):
         if gap["delta_kcal"] > 0:
             seg.append(f"少 {gap['delta_kcal']:.0f} 大卡")
         if seg:
-            line += f"，比{fmt_items(other)}{'、'.join(seg)}"
+            line += f"，比{fmt_items(other, mark=False)}{'、'.join(seg)}"
 
     return line + "。"
 
@@ -405,7 +419,10 @@ def render(store, budget, kcal_cap, pool, tiers, top_items, verified, insight, h
         L.append(f"| {it['name']} | ¥{it['price']:g} | {it['kcal']:.0f} | {it['protein']:.0f}g "
                  f"| {m['g_per_yuan']} | {m['protein_density']} |")
     L.append("")
-    L.append(f"可算账单品 {len(pool)} 个。其余菜单项因营养库无对应条目已排除，不做估算。")
+    n_s = sum(1 for x in pool if x.get("kind") == "单品")
+    n_c = sum(1 for x in pool if x.get("kind") == "套餐")
+    L.append(f"可算账 {len(pool)} 项：单品 {n_s} 个（菜单名与营养库精确同名），"
+             f"套餐 {n_c} 个（官方默认搭配逐项相加）。对不上的不做估算。")
     return "\n".join(L)
 
 
@@ -468,12 +485,19 @@ def main():
 
     sc = store["storeCode"]
 
-    meals, _ = mc.get_meals(client, sc)
+    if not args.oneline:
+        print("正在拉门店菜单、营养表和套餐组成（约 15 秒）...", file=sys.stderr)
     nutrition = mc.get_nutrition(client)
-    pool = build_pool(meals, nutrition)
+    pool, dropped = ct.collect_items(client, sc, nutrition=nutrition)
     if not pool:
-        print("这家门店没有单品能对上营养库，换一家门店试试。", file=sys.stderr)
+        print("这家门店没有能对上营养库的餐品，换一家门店试试。", file=sys.stderr)
         return 4
+    n_single = sum(1 for x in pool if x["kind"] == "单品")
+    n_combo = sum(1 for x in pool if x["kind"] == "套餐")
+    if not args.oneline:
+        print(f"可算账 {len(pool)} 项（单品 {n_single} + 套餐 {n_combo}"
+              + (f"，{len(dropped)} 个套餐因配料缺营养数据已排除" if dropped else "")
+              + "）", file=sys.stderr)
 
     combos = enumerate_combos(pool, args.budget, args.kcal or None, args.max_items)
     if not combos:
