@@ -1,0 +1,265 @@
+{
+ "说明": "营养库(list-nutrition-foods) 与 门店菜单(query-meals) 的名称对齐表。只收录名称精确一致的项。",
+ "生成时间": "2026-10-24",
+ "参考门店": {
+  "storeCode": "3560111",
+  "name": "麦当劳周口文昌万达广场餐厅"
+ },
+ "对齐规则": "营养名称 == 菜单名称，完全一致才可用。不做模糊匹配、不做估算。",
+ "精确对齐": [
+  {
+   "name": "薄皮焦香V翅",
+   "code": "520445",
+   "price": 15.5,
+   "kcal": 192.0,
+   "protein": 17.0,
+   "fat": 11.0,
+   "carb": 6.0,
+   "sodium": 594.0,
+   "calcium": 15.0
+  },
+  {
+   "name": "双层吉士汉堡",
+   "code": "1120",
+   "price": 23.0,
+   "kcal": 429.0,
+   "protein": 27.0,
+   "fat": 22.0,
+   "carb": 31.0,
+   "sodium": 1017.0,
+   "calcium": 232.0
+  },
+  {
+   "name": "板烧鸡腿堡",
+   "code": "1406",
+   "price": 23.5,
+   "kcal": 391.0,
+   "protein": 23.0,
+   "fat": 17.0,
+   "carb": 35.0,
+   "sodium": 1041.0,
+   "calcium": 93.0
+  },
+  {
+   "name": "双层深海鳕鱼堡",
+   "code": "9900003586",
+   "price": 24.0,
+   "kcal": 485.0,
+   "protein": 28.0,
+   "fat": 21.0,
+   "carb": 46.0,
+   "sodium": 917.0,
+   "calcium": 147.0
+  },
+  {
+   "name": "不素之霸双层牛堡",
+   "code": "4648",
+   "price": 25.5,
+   "kcal": 493.0,
+   "protein": 28.0,
+   "fat": 27.0,
+   "carb": 34.0,
+   "sodium": 1012.0,
+   "calcium": 75.0
+  },
+  {
+   "name": "培根蔬萃双层牛堡",
+   "code": "1106",
+   "price": 24.5,
+   "kcal": 442.0,
+   "protein": 24.0,
+   "fat": 23.0,
+   "carb": 34.0,
+   "sodium": 728.0,
+   "calcium": 73.0
+  },
+  {
+   "name": "巨无霸",
+   "code": "1100",
+   "price": 26.5,
+   "kcal": 513.0,
+   "protein": 27.0,
+   "fat": 26.0,
+   "carb": 42.0,
+   "sodium": 961.0,
+   "calcium": 171.0
+  },
+  {
+   "name": "麦辣鸡腿汉堡",
+   "code": "1440",
+   "price": 22.5,
+   "kcal": 485.0,
+   "protein": 24.0,
+   "fat": 24.0,
+   "carb": 42.0,
+   "sodium": 1208.0,
+   "calcium": 154.0
+  },
+  {
+   "name": "麦香鱼",
+   "code": "1600",
+   "price": 22.0,
+   "kcal": 325.0,
+   "protein": 16.0,
+   "fat": 13.0,
+   "carb": 35.0,
+   "sodium": 556.0,
+   "calcium": 99.0
+  },
+  {
+   "name": "培根安格斯厚牛堡",
+   "code": "511781",
+   "price": 34.5,
+   "kcal": 707.0,
+   "protein": 34.0,
+   "fat": 44.0,
+   "carb": 43.0,
+   "sodium": 1037.0,
+   "calcium": 161.0
+  },
+  {
+   "name": "芝士安格斯厚牛堡",
+   "code": "511782",
+   "price": 31.5,
+   "kcal": 696.0,
+   "protein": 32.0,
+   "fat": 44.0,
+   "carb": 43.0,
+   "sodium": 897.0,
+   "calcium": 150.0
+  },
+  {
+   "name": "酥酥多笋卷",
+   "code": "521816",
+   "price": 20.5,
+   "kcal": 342.0,
+   "protein": 14.0,
+   "fat": 15.0,
+   "carb": 36.0,
+   "sodium": 1044.0,
+   "calcium": 41.0
+  },
+  {
+   "name": "麦香鸡",
+   "code": "1450",
+   "price": 16.5,
+   "kcal": 369.0,
+   "protein": 15.0,
+   "fat": 17.0,
+   "carb": 39.0,
+   "sodium": 731.0,
+   "calcium": 73.0
+  },
+  {
+   "name": "脆脆薯条",
+   "code": "514782",
+   "price": 16.0,
+   "kcal": 279.0,
+   "protein": 4.0,
+   "fat": 14.0,
+   "carb": 32.0,
+   "sodium": 540.0,
+   "calcium": 13.0
+  },
+  {
+   "name": "脆薯饼",
+   "code": "521741",
+   "price": 8.0,
+   "kcal": 146.0,
+   "protein": 1.0,
+   "fat": 9.0,
+   "carb": 14.0,
+   "sodium": 311.0,
+   "calcium": 7.0
+  },
+  {
+   "name": "苹果片",
+   "code": "6102",
+   "price": 7.0,
+   "kcal": 32.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 7.0,
+   "sodium": 0.0,
+   "calcium": 18.0
+  },
+  {
+   "name": "【美汁源】“黄金橙橙”",
+   "code": "2430",
+   "price": 13.0,
+   "kcal": 165.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 41.0,
+   "sodium": 53.0,
+   "calcium": 0.0
+  },
+  {
+   "name": "纯悦",
+   "code": "3757",
+   "price": 7.5,
+   "kcal": 0.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 0.0,
+   "sodium": 0.0,
+   "calcium": 0.0
+  },
+  {
+   "name": "锡兰红茶",
+   "code": "3505",
+   "price": 11.0,
+   "kcal": 2.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 0.0,
+   "sodium": 0.0,
+   "calcium": 5.0
+  }
+ ],
+ "已排除的模糊对应": [
+  {
+   "nutrition": "中薯条",
+   "menu": "薯条",
+   "usable": false,
+   "why": "菜单只有一个「薯条」SKU，中/大/小杯规格价格不同，强行对应会配错价"
+  },
+  {
+   "nutrition": "大薯条",
+   "menu": "薯条",
+   "usable": false,
+   "why": "同上"
+  },
+  {
+   "nutrition": "小薯条",
+   "menu": "薯条",
+   "usable": false,
+   "why": "同上"
+  },
+  {
+   "nutrition": "麦乐鸡5块",
+   "menu": "麦乐鸡",
+   "usable": false,
+   "why": "菜单未标明块数，无法确定单价对应 4 块还是 5 块"
+  },
+  {
+   "nutrition": "麦乐鸡4块",
+   "menu": "麦乐鸡",
+   "usable": false,
+   "why": "同上"
+  },
+  {
+   "nutrition": "吉士汉堡包",
+   "menu": "吉士汉堡包套餐",
+   "usable": false,
+   "why": "一边是单品一边是套餐，热量口径不同，不能混算"
+  },
+  {
+   "nutrition": "芝士双层安格斯厚牛堡",
+   "menu": "芝士安格斯厚牛堡",
+   "usable": false,
+   "why": "单层/双层是不同商品，热量差一倍"
+  }
+ ],
+ "注意": "不同门店菜单项不同，精确对齐的集合会变。本表是 3560111 门店的实测结果，仅供无代码模式起步使用；正式运行应以实时 query-meals 结果重新对齐。"
+}

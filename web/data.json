@@ -1,0 +1,199 @@
+{
+ "store": {
+  "code": "3560111",
+  "name": "麦当劳周口文昌万达广场餐厅"
+ },
+ "captured": "2026-10-24 12:18",
+ "items": [
+  {
+   "code": "520445",
+   "name": "薄皮焦香V翅",
+   "price": 15.5,
+   "kcal": 192.0,
+   "protein": 17.0,
+   "fat": 11.0,
+   "carb": 6.0,
+   "sodium": 594.0
+  },
+  {
+   "code": "1120",
+   "name": "双层吉士汉堡",
+   "price": 23.0,
+   "kcal": 429.0,
+   "protein": 27.0,
+   "fat": 22.0,
+   "carb": 31.0,
+   "sodium": 1017.0
+  },
+  {
+   "code": "1406",
+   "name": "板烧鸡腿堡",
+   "price": 23.5,
+   "kcal": 391.0,
+   "protein": 23.0,
+   "fat": 17.0,
+   "carb": 35.0,
+   "sodium": 1041.0
+  },
+  {
+   "code": "9900003586",
+   "name": "双层深海鳕鱼堡",
+   "price": 24.0,
+   "kcal": 485.0,
+   "protein": 28.0,
+   "fat": 21.0,
+   "carb": 46.0,
+   "sodium": 917.0
+  },
+  {
+   "code": "4648",
+   "name": "不素之霸双层牛堡",
+   "price": 25.5,
+   "kcal": 493.0,
+   "protein": 28.0,
+   "fat": 27.0,
+   "carb": 34.0,
+   "sodium": 1012.0
+  },
+  {
+   "code": "1106",
+   "name": "培根蔬萃双层牛堡",
+   "price": 24.5,
+   "kcal": 442.0,
+   "protein": 24.0,
+   "fat": 23.0,
+   "carb": 34.0,
+   "sodium": 728.0
+  },
+  {
+   "code": "1100",
+   "name": "巨无霸",
+   "price": 26.5,
+   "kcal": 513.0,
+   "protein": 27.0,
+   "fat": 26.0,
+   "carb": 42.0,
+   "sodium": 961.0
+  },
+  {
+   "code": "1440",
+   "name": "麦辣鸡腿汉堡",
+   "price": 22.5,
+   "kcal": 485.0,
+   "protein": 24.0,
+   "fat": 24.0,
+   "carb": 42.0,
+   "sodium": 1208.0
+  },
+  {
+   "code": "1600",
+   "name": "麦香鱼",
+   "price": 22.0,
+   "kcal": 325.0,
+   "protein": 16.0,
+   "fat": 13.0,
+   "carb": 35.0,
+   "sodium": 556.0
+  },
+  {
+   "code": "511781",
+   "name": "培根安格斯厚牛堡",
+   "price": 34.5,
+   "kcal": 707.0,
+   "protein": 34.0,
+   "fat": 44.0,
+   "carb": 43.0,
+   "sodium": 1037.0
+  },
+  {
+   "code": "511782",
+   "name": "芝士安格斯厚牛堡",
+   "price": 31.5,
+   "kcal": 696.0,
+   "protein": 32.0,
+   "fat": 44.0,
+   "carb": 43.0,
+   "sodium": 897.0
+  },
+  {
+   "code": "521816",
+   "name": "酥酥多笋卷",
+   "price": 20.5,
+   "kcal": 342.0,
+   "protein": 14.0,
+   "fat": 15.0,
+   "carb": 36.0,
+   "sodium": 1044.0
+  },
+  {
+   "code": "1450",
+   "name": "麦香鸡",
+   "price": 16.5,
+   "kcal": 369.0,
+   "protein": 15.0,
+   "fat": 17.0,
+   "carb": 39.0,
+   "sodium": 731.0
+  },
+  {
+   "code": "514782",
+   "name": "脆脆薯条",
+   "price": 16.0,
+   "kcal": 279.0,
+   "protein": 4.0,
+   "fat": 14.0,
+   "carb": 32.0,
+   "sodium": 540.0
+  },
+  {
+   "code": "521741",
+   "name": "脆薯饼",
+   "price": 8.0,
+   "kcal": 146.0,
+   "protein": 1.0,
+   "fat": 9.0,
+   "carb": 14.0,
+   "sodium": 311.0
+  },
+  {
+   "code": "6102",
+   "name": "苹果片",
+   "price": 7.0,
+   "kcal": 32.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 7.0,
+   "sodium": 0.0
+  },
+  {
+   "code": "2430",
+   "name": "【美汁源】“黄金橙橙”",
+   "price": 13.0,
+   "kcal": 165.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 41.0,
+   "sodium": 53.0
+  },
+  {
+   "code": "3757",
+   "name": "纯悦",
+   "price": 7.5,
+   "kcal": 0.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 0.0,
+   "sodium": 0.0
+  },
+  {
+   "code": "3505",
+   "name": "锡兰红茶",
+   "price": 11.0,
+   "kcal": 2.0,
+   "protein": 0.0,
+   "fat": 0.0,
+   "carb": 0.0,
+   "sodium": 0.0
+  }
+ ]
+}

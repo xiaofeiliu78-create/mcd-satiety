@@ -1,0 +1,13 @@
+{
+  "_comment": "麦当劳 MCP 脱敏配置示例。真实 Token 只放环境变量，绝不写进仓库。",
+  "mcpServers": {
+    "mcd-mcp": {
+      "type": "streamableHttp",
+      "url": "https://mcp.mcd.cn",
+      "headers": {
+        "Authorization": "Bearer ${MCD_MCP_TOKEN}"
+      },
+      "timeout": 60000
+    }
+  }
+}
