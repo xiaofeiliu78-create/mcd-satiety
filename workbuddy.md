@@ -295,6 +295,119 @@ $ python mcd_solver.py --city 周口市 --budget 35 --kcal 800 --oneline
 
 ---
 
+## 20:20 — 交付前三条自检（真实证据）
+
+用户要求做完自己查三条。三条都真跑了，证据如下。
+
+### 自检 1：别人下载仓库、配好 Token，一条命令能出结果
+
+模拟方式：只把 `mcd_solver.py`、`mcd_client.py`、`data/` 复制到一个空目录（模拟刚克隆、没有 `__pycache__`），`HOME` 指到空目录（模拟没配过配置文件的机器），Token 只通过环境变量传：
+
+```
+$ USERPROFILE=/tmp/nohome HOME=/tmp/nohome MCD_MCP_TOKEN=<Token> python mcd_solver.py \
+    --city 周口市 --budget 35 --kcal 800 --oneline
+
+35 块 800 大卡，点薄皮焦香V翅×2，384 大卡 34 克蛋白，比培根安格斯厚牛堡省 3 块 5、少 323 大卡。
+```
+
+**通过。** 零第三方依赖这点也是真的——那个空目录里只有三个文件，没有任何 `venv`、没有 `pip install`。
+
+### 自检 2：双击 `一键算账.bat` 能出结果，中文不乱码
+
+用管道喂回车模拟双击（`cmd //c "一键算账.bat" < 输入`），在新解压的 zip 目录里跑：
+
+```
+  麦门顶饿算账 · 麦当劳官方数据实时算账
+  ----------------------------------------
+
+  正在查麦当劳官方接口...
+
+按城市搜到 3 家门店（距离按城市中心估算，仅供排序参考）：
+  1. 麦当劳周口文昌万达广场餐厅　1.5 公里　营业中　川汇区大庆路文昌大道万达广场
+  2. 麦当劳周口七一路餐厅　1.9 公里　营业中　七一路西段1号
+  3. 麦当劳周口开元万达广场餐厅　4.5 公里　营业中　开元大道与五一路交叉口
+
+已自动选择最近的一家：麦当劳周口文昌万达广场餐厅
+# 麦门顶饿算账｜麦当劳周口文昌万达广场餐厅
+```
+
+**通过。** 中文零乱码，门店列表、自动选店、完整报告全部正常。
+
+### 自检 3：README 从头看 30 秒，知道第一步干什么
+
+README 开头 6 行就是标题 + 一句话价值 + 一段真实输出示例，第 10 行进入「三分钟跑起来」，第一个小标题直接是「第 1 步：领一个 Token」。**通过。**
+
+---
+
+## 20:25 — 自检时又抓出两个会坑到别人的问题
+
+### 问题 A：`.gitignore` 把自己忽略了，等于没提交
+
+`.gitignore` 第一行写着 `.gitignore`。结果 `git ls-files` 里根本没有它（`grep -c` 返回 0），别人克隆下来不会忽略 `__pycache__` 和 `*.pyc`，第一次跑完脚本就会把编译缓存混进 `git status`。
+
+修法：删掉自我忽略那行，另外补上 `.env` 和 `mcp.json`（防止有人把带 Token 的配置文件顺手提交）。
+
+### 问题 B：`core.autocrlf=true` 会把 `run.sh` 转成 CRLF，macOS 上直接跑不了
+
+本机 `core.autocrlf` 是 `true`。commit 时 git 提示 `LF will be replaced by CRLF`——这一句翻译过来就是：**苹果电脑用户克隆下来，`run.sh` 会带 CR，执行时报 `bad interpreter: No such file or directory`。**
+
+这种 bug 在自己机器上永远复现不出来（Windows 上 CRLF 的 sh 也照样能过 `sh -n`），只有换到 macOS 才炸。修法是新增 `.gitattributes` 按类型锁死：
+
+```
+*.sh      text eol=lf
+*.command text eol=lf
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+*.ps1     text eol=crlf
+```
+
+然后 `git add --renormalize .` 重写索引。验证 `git ls-files --eol`：
+
+```
+i/lf  w/lf    attr/text eol=lf     run.sh
+i/lf  w/crlf  attr/text eol=crlf   run.ps1
+i/lf  w/crlf  attr/text eol=crlf   一键算账.bat
+```
+
+### 远程实测：从 GitHub 下载 zip，三种脚本的换行符全部正确
+
+不 clone，直接下 `master.zip`（这是普通用户最常用的方式），解开逐个查字节：
+
+```
+run.ps1        | CRLF 50 | 裸LF 0  | BOM True
+run.sh         | CRLF 0  | 裸LF 64 | BOM False
+一键算账.bat    | CRLF 4  | 裸LF 0  | BOM False
+```
+
+三种脚本各要各的换行符，全都对。而且从这个**新解压的 zip 目录**里直接跑 `.bat`，输出就是上面自检 2 贴的那一段——不是拿开发目录冒充的。
+
+### 顺手记一笔
+
+中途用 `grep -c $'\r' run.sh` 查 CR，报出 64（看着像全篇 CRLF），换 `python` 逐字节数才发现是 **0 个 CRLF、64 个纯 LF**——是这个 shell 里 `$'\r'` 没被正确展开，grep 把每行都算成命中。**查换行符不要信 grep，要数字节。** 这个假警报要是没复核，可能会去「修」一个本来正确的东西。
+
+---
+
+## 20:35 — 又发现线上网页是旧算法
+
+`docs/index.html`（GitHub Pages 线上那份）和 `web/index.html` 不同步：`minDens` 的修正只改在了 `web/`，线上那份还是旧逻辑，**意味着点开在线演示的人仍然会看到「汉堡 + 冰淇淋」**。
+
+`diff` 两份只差 10 行，全是算法那一段，资源引用完全一致，所以直接把 `web/index.html` 覆盖过去。
+
+然后用 Node 把网页的 `enumerate()` + `pick()` **原样复刻**出来，喂 `web/data.json` 跑，和 Python 引擎比对：
+
+```
+预算30 热量700｜组合数 60
+  第一档: 双层深海鳕鱼堡x1 | ¥24 | 485kcal | 蛋白28g | 密度5.8 | 最小密度5.77
+预算35 热量800｜组合数 128
+  第一档: 薄皮焦香V翅x2 | ¥31 | 384kcal | 蛋白34g | 密度8.9 | 最小密度8.85
+```
+
+Python 同参数输出：¥30/700 → 双层深海鳕鱼堡（¥24 / 485kcal / 28g）；¥35/800 → 薄皮焦香V翅×2（¥31 / 384kcal / 34g）。**两边完全一致。**
+
+中间还走了一次弯路：第一版核对脚本漏了「每件最多 2 份」的数量枚举，只允许不同单品各 1 件，所以 ¥35/800 算出了 `培根安格斯厚牛堡` 而不是 `V翅×2`。差点以为两边算法不一致。回头读网页源码才看到 `maxQty = 2`——**核对脚本本身写错，会伪造成「算法有 bug」的假象**，比不核对更危险。
+
+---
+
 ## 全程踩坑清单（供后来者省时间）
 
 1. MCP 地址是根路径 `https://mcp.mcd.cn`，`/mcp` 报 404
@@ -309,3 +422,8 @@ $ python mcd_solver.py --city 周口市 --budget 35 --kcal 800 --oneline
 10. **三个启动脚本的换行符要求互相冲突。** `.bat` → CRLF；`.ps1` → UTF-8 **BOM** + CRLF（无 BOM 时 PowerShell 5.1 按 GBK 解析，中文全乱）；`.sh` → **LF**（CRLF 会 `bad interpreter`）。改完必须逐个验字节
 11. **精确对齐的条数会随菜单浮动。** 建表时 19 个，几天后实测 20 个。文档里写死的数字要么标注会变，要么别写
 12. **`query-nearby-stores` 给的「距离」是距城市中心的估算**，不是用户定位。展示时必须标明，不能让人以为是「离我多远」
+13. **`.gitignore` 里别写 `.gitignore`。** 写了这行，这个文件本身就不会被提交，等于没加忽略规则
+14. **`core.autocrlf=true` 的机器上，一定要有 `.gitattributes`。** 否则 `run.sh` 提交后变 CRLF，macOS 上直接 `bad interpreter`；这个 bug 在 Windows 上永远复现不出来
+15. **查换行符不要信 `grep -c $'\r'`**，某些 shell 里转义不展开会把每行都算成命中，要数字节（`python -c "d.count(b'\r\n')"`）
+16. **改了 `web/index.html` 一定要同步 `docs/index.html`**，后者才是 GitHub Pages 线上那份。不然线上还跑旧算法
+17. **写交叉核对脚本时，先读懂被核对的逻辑再复刻。** 漏一个 `maxQty` 参数就会得出「两边不一致」的假结论，反而浪费一轮排查

@@ -224,7 +224,9 @@ function enumerate(budget, cap, maxItems = 3, maxQty = 2) {
             protein: Math.round(protein * 10) / 10,
             sodium: Math.round(sodium),
             perYuan: price > 0 ? protein / price : 0,
-            dens: kcal > 0 ? protein / (kcal / 100) : 0
+            dens: kcal > 0 ? protein / (kcal / 100) : 0,
+            minDens: Math.round(Math.min(...idxs.map(ix =>
+              ITEMS[ix].kcal > 0 ? ITEMS[ix].protein / (ITEMS[ix].kcal / 100) : 0)) * 100) / 100
           });
         }
         return;
@@ -251,7 +253,7 @@ function pick(combos, filter, rank, used) {
 function solve(budget, cap) {
   const combos = enumerate(budget, cap);
   const used = new Set(), tiers = [];
-  const t1 = pick(combos, c => c.dens >= 3, c => c.protein * 1000 - c.kcal, used);
+  const t1 = pick(combos, c => c.dens >= 3 && c.minDens >= 3, c => c.protein * 1000 - c.kcal, used);
   if (t1) tiers.push({...t1, label:"顶饿", sub:"热量预算内，蛋白最多的那一单"});
   const t2 = pick(combos, c => c.protein >= MIN_ECON_PROTEIN, c => c.perYuan * 100 + c.protein / 1000 - c.price / 1e6, used);
   if (t2) tiers.push({...t2, label:"省钱", sub:"不看热量，只问每块钱能换多少蛋白"});
