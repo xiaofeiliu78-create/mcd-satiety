@@ -148,6 +148,7 @@
     color:var(--accent);padding:0 4px;margin-right:5px;vertical-align:1.5px;letter-spacing:.02em;
   }
   .g .badge{font-size:8.5px;padding:0 3px;margin-right:3px}
+  .g-noimg{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#F1EFE8;color:var(--muted);font-size:10px;border:1px solid var(--rule)}
 
   footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);font-size:10.5px;color:var(--muted);line-height:1.9}
 </style>
@@ -189,9 +190,9 @@
   <div class="rank" id="rank"></div>
   <p class="footnote">蛋白密度＝蛋白(g) ÷ 热量(kcal/100)。同样热量下，数值越高吃到的蛋白越多。标着「套餐」的，是把官方默认搭配里每一样的营养相加得到的，不是估的。</p>
 
-  <div class="label">这家店能点的</div>
+  <div class="label" id="gridLabel">这家店能点的</div>
   <div class="grid" id="grid"></div>
-  <p class="footnote">按蛋白密度排序，只展示前 18 项。</p>
+  <p class="footnote">按蛋白密度排序，店内每一项都配了图——图都是麦当劳官方商品图，从官方菜单接口直接抓的。薯条、薯片、V翅、汉堡一个不漏。</p>
 
   <details>
     <summary>数据来源与算法</summary>
@@ -290,7 +291,7 @@ function solve(budget, cap) {
 function pics(items) {
   return items.filter(it => it.image).map(it => `
     <div class="pic">
-      <img src="${it.image}" alt="${it.name}" loading="lazy">
+      <img src="${it.image}" alt="${it.name}" loading="lazy" referrerpolicy="no-referrer">
       <span>${it.name}${it.qty > 1 ? " ×" + it.qty : ""}</span>
     </div>`).join("");
 }
@@ -361,7 +362,7 @@ function renderRank() {
     const badge = it.kind === "套餐" ? '<span class="badge">套餐</span>' : "";
     return `<div class="r">
       <div class="r-top">
-        ${it.image ? `<img src="${it.image}" alt="${it.name}" loading="lazy">` : ""}
+        ${it.image ? `<img src="${it.image}" alt="${it.name}" loading="lazy" referrerpolicy="no-referrer">` : ""}
         <div class="r-h"><b>${badge}${it.name}</b><span>${d.toFixed(1)}　¥${money(it.price)}</span></div>
       </div>
       <div class="r-bar"><i style="width:${Math.max(d / max * 100, 1)}%"></i></div>
@@ -370,11 +371,14 @@ function renderRank() {
 }
 
 function renderGrid() {
-  const sorted = [...ITEMS].filter(it => it.kcal > 0).sort((a, b) => density(b) - density(a)).slice(0, 18);
+  const sorted = [...ITEMS].filter(it => it.kcal > 0).sort((a, b) => density(b) - density(a));
   document.getElementById("grid").innerHTML = sorted.map(it => {
     const badge = it.kind === "套餐" ? '<span class="badge">套餐</span>' : "";
+    const img = it.image
+      ? `<img src="${it.image}" alt="${it.name}" loading="lazy" referrerpolicy="no-referrer">`
+      : `<div class="g-noimg">无图</div>`;
     return `<div class="g">
-      ${it.image ? `<img src="${it.image}" alt="${it.name}" loading="lazy">` : ""}
+      ${img}
       <b>${badge}${it.name}</b>
       <div class="n">${Math.round(it.kcal)} kcal · 蛋白 ${it.protein}g<br>¥${money(it.price)}</div>
     </div>`;
@@ -399,6 +403,7 @@ function setStore(idx) {
   if (!st) return;
   ITEMS = st.items;
   document.getElementById("storeName").textContent = st.name.replace("麦当劳", "");
+  document.getElementById("gridLabel").textContent = `这家店能点的 · 共 ${ITEMS.length} 件`;
   renderRank();
   renderGrid();
   update();
